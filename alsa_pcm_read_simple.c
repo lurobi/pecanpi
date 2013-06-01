@@ -79,6 +79,7 @@ void create_recorder(int samp_rate,char* dev_name,snd_pcm_t **capture_handle_f)
     exit (1);
   }
 
+  /*
   int nbuf = 8000;
   short *buf = (short*)malloc(sizeof(short)*nbuf);
   int i;
@@ -93,13 +94,13 @@ void create_recorder(int samp_rate,char* dev_name,snd_pcm_t **capture_handle_f)
       printf("read from C using %p into %p.\n",capture_handle,buf);
       }
   }
+  */
 
 }
 
-void get_sample_buffer(snd_pcm_t **capture_handle_f, short *f_buf,int nbuf)
+void get_sample_buffer(snd_pcm_t **capture_handle_f, short *buf,int nbuf)
 {
   int err;
-  short *buf = f_buf;
   snd_pcm_t *capture_handle = *capture_handle_f;
   printf("get_sample_buffer: buf at %p, nbuf=%d\n",buf,nbuf);
   printf("reading from handle %p\n",capture_handle);

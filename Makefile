@@ -2,7 +2,8 @@
 FC  := gfortran
 CC  := gcc
 CFLAGS := 
-FCFLAGS :=
+FCFLAGS := -I/usr/include
+FLFLAGS := -L/usr/lib
 
 all: alsa_pcm_read fort_test
 
@@ -12,7 +13,7 @@ clean:
 alsa_pcm_read: alsa_pcm_read.o
 	$(CC) -o $@ $^ $(CFLAGS) -lasound
 fort_test: fort_alsa_read.o alsa_pcm_read_simple.o fort_test.o 
-	$(FC) -o $@ $^ $(FCFLAGS) -lasound
+	$(FC) -o $@ $^ $(FCFLAGS) -lasound -lhdf5_fortran
 
 %.o: %.f90
 	$(FC) -c $(FCFLAGS) $< -o $@
