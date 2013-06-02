@@ -9,6 +9,7 @@ all: alsa_pcm_read fort_test
 
 clean:
 	rm -f *.o *.mod *~
+	rm -f alsa_pcm_read fort_test
 
 alsa_pcm_read: alsa_pcm_read.o
 	$(CC) -o $@ $^ $(CFLAGS) -lasound
