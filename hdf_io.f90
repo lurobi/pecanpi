@@ -32,13 +32,14 @@ contains
     ! create a dataspace (filespace_id)
     call h5screate_f(H5S_SIMPLE_F, filespace_id, hdferr)
 
-    file_dims(:) = 0
+    file_dims(:) = max_dims
+    file_dims(rank) = 0
 
     ! specify the rank and dims of the sapce
     call h5sset_extent_simple_f(filespace_id, rank, file_dims, max_dims, hdferr)
 
     ! enable chunking properties
-    call hdf_io_smart_chunking(rank,file_dims,cprop_list)
+    call hdf_io_smart_chunking(rank,max_dims,cprop_list)
 
     ! create the data-set using our dataspace
     call h5dcreate_f(file_id, dset_name, data_type, &
@@ -160,6 +161,7 @@ contains
 
     ! start with the file dims
     chunk_dims(:) = file_dims(:)
+    where (chunk_dims .lt. 1) chunk_dims = 1
     ! assume data will grow in the last dimension, so chunk those one at
     ! a time.
     chunk_dims(rank) = 1
@@ -174,7 +176,7 @@ contains
     ! dimension by two and try again.
     do while (product(chunk_dims) .lt. min_block_size)
        jmin = minloc(chunk_dims,DIM=1)
-       print *,'Growing dim',jmin,chunk_dims(jmin)
+       print *,'Growing dim',jmin,chunk_dims(jmin),chunk_dims
        chunk_dims(jmin) = chunk_dims(jmin)*2
     end do
     do while (product(chunk_dims) .gt. max_block_size)
