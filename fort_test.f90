@@ -30,20 +30,21 @@ program fort_test
 
   call h5open_f(hdferr)
   f0 = 8000  
-  nbuf = f0/2
+  nbuf = f0/4
+  nchunk=20 / (1.0*nbuf/f0)
+  print *,'nchunk',nchunk
   allocate(buf(nbuf),hdf5_buf(nbuf))
   buf = 0
 
   !max_dims(1) = HUGE(max_dims(1)) ! this does... make sure we chunk it!!
-  max_dims = 65536*1024
+  max_dims = nchunk*nbuf
 
-  spectrum_dims(1) = nbuf
   file_dims(1) = 0
   rank = 1
 
   call hdf_io_create_file(filename, file_id,hdferr)
-  call hdf_io_create_dataset("audio",file_id,H5T_IEEE_F32LE,1,max_dims)
-  max_dims(1) = nbuf
+  call hdf_io_create_dataset("audio",file_id,H5T_STD_I16LE,1,max_dims)
+  max_dims(1) = nbuf/2
   call hdf_io_create_dataset("spectrum",file_id,H5T_IEEE_F32LE,2,max_dims)
   ! get the dataset ID to our dataset
   call h5dopen_f(file_id, "audio", audio_dset_id, hdferr)
@@ -52,7 +53,9 @@ program fort_test
   call h5dget_space_f(spectrum_dset_id, spectrum_filespace_id, hdferr)
 
   audio_dims(1) = size(hdf5_buf)
-  spectrum_dims(1) = nbuf
+  spectrum_dims(1) = nbuf/2
+  spectrum_dims(2) = 0
+
   ! open a memory dataspace which describes our buffer
   call h5screate_simple_f(1,audio_dims, audio_memspace_id,hdferr)
   call h5screate_simple_f(1,spectrum_dims, spectrum_memspace_id,hdferr)
@@ -62,15 +65,14 @@ program fort_test
 
   call alsa_create_recorder(f0,'hw:1,0',ALSA%capture_handle)
 
-  nchunk=10
   do jchunk=1,nchunk
      call alsa_get_buffer(ALSA%capture_handle,buf,size(buf))
-     print *,'Got Buffer'
+     print *,'Got Buffer',buf(1:3)
      fft%in = buf
      call fft_execute(fft)
      print *,'FFTd buffer'
      hdf5_buf(:) = buf(:)
-     hdf5_buf(1) = 100000+jchunk
+     print *,'Writing audio:',hdf5_buf(1:3)
      call hdf_io_append_start(audio_memspace_id,audio_dset_id,audio_filespace_id)
      call h5dwrite_integer_4(audio_dset_id, H5T_NATIVE_INTEGER, hdf5_buf, &
           audio_dims, hdferr, audio_memspace_id, audio_filespace_id )
