@@ -14,7 +14,7 @@ clean:
 alsa_pcm_read: alsa_pcm_read.o
 	$(CC) -o $@ $^ $(CFLAGS) -lasound
 fort_test: fort_alsa_read.o alsa_pcm_read_simple.o fort_test.o hdf_io.o compat_fft.o
-	$(FC) -o $@ $^ $(FCFLAGS) $(FLFLAGS) -lasound -lhdf5_fortran -lfftw3f -lm
+	$(FC) -o $@ $^ $(FCFLAGS) $(FLFLAGS) -lasound -lhdf5_fortran -lhdf5 -lfftw3f -lm
 
 fort_test.o: fort_alsa_read.o alsa_pcm_read_simple.o hdf_io.o compat_fft.o
 
