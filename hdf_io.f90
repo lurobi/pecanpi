@@ -4,6 +4,14 @@ use hdf5
 
 logical :: is_hdf_started = .false.
 
+type HDF_io_struct
+  integer(HID_T) :: file_id,dset_id,crp_list
+  integer(HID_T) :: filespace_id,memspace_id
+  integer :: rank
+  integer(HSIZE_T),allocatable :: mem_dims(:),max_dims(:),file_dims(:)
+  integer(HSIZE_T),allocatable :: offset(:), count(:)
+end type HDF_io_struct
+
 contains
   subroutine hdf_io_create_file(filename, file_id, hdferr)
     implicit none
@@ -95,7 +103,7 @@ contains
     allocate(foffset(filerank),fcount(filerank))
     call h5sget_simple_extent_dims_f(filespace,filedims,filedims_max,hdferr)
 
-    print *,'Filedims original: ',filedims
+    !print *,'Filedims original: ',filedims
 
     foffset(:) = 0
     fcount(1:memrank) = memdims(:)
@@ -127,14 +135,14 @@ contains
     foffset = foffset
 
     ! resize the file to include the new data
-    print *,'Growing fileset to',filedims
+    !print *,'Growing fileset to',filedims
     call h5dset_extent_f(dataset_id, filedims, hdferr)
     ! NOTE: we *must* re-get the filespace after set_extent
     call h5dget_space_f(dataset_id, filespace, hdferr)
     ! select the new data.
-    print *,'Selecting hyperslab: '
-    print *,'foffset: ',foffset
-    print *,'fcount: ',fcount
+    !print *,'Selecting hyperslab: '
+    !print *,'foffset: ',foffset
+    !print *,'fcount: ',fcount
     call h5sselect_hyperslab_f(filespace, H5S_SELECT_SET_F, &
          foffset, fcount, hdferr )
 
@@ -169,22 +177,22 @@ contains
     ! one at a time (really, only chunk_dims(rank) is expected to be
     ! this big)
     where (chunk_dims .gt. max_single_dim) chunk_dims=1
-    print *,'File DIMS:       ',file_dims
-    print *,'1st chunk_dims:  ',chunk_dims
+    !print *,'File DIMS:       ',file_dims
+    !print *,'1st chunk_dims:  ',chunk_dims
     ! try to fit our chunks in reasonably sized blocks.  if the current
     ! chunk is too big to fit, reduce the chunking in the maximum
     ! dimension by two and try again.
     do while (product(chunk_dims) .lt. min_block_size)
        jmin = minloc(chunk_dims,DIM=1)
-       print *,'Growing dim',jmin,chunk_dims(jmin),chunk_dims
+       !print *,'Growing dim',jmin,chunk_dims(jmin),chunk_dims
        chunk_dims(jmin) = chunk_dims(jmin)*2
     end do
     do while (product(chunk_dims) .gt. max_block_size)
        jmax = maxloc(chunk_dims,DIM=1)
-       print *,'Reducing dim',jmax,chunk_dims(jmax)
+       !print *,'Reducing dim',jmax,chunk_dims(jmax)
        chunk_dims(jmax) = chunk_dims(jmax)/2
     end do
-    print *,'final chunk_dims:',chunk_dims
+    print *,'Using chunk_dims:',chunk_dims
 
     ! finally, create a property list and set the chunking size.
     call h5pcreate_f(H5P_DATASET_CREATE_F,crp_list, hdferr)
