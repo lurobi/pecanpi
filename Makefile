@@ -5,7 +5,9 @@ CFLAGS :=
 FCFLAGS := -g -fcheck=all -I/usr/include
 FLFLAGS := -L/usr/lib
 
-OBJECTS := fort_alsa_read.o alsa_pcm_read_simple.o fort_test.o hdf_io.o compat_fft.o spec_module.o
+OBJECTS := fort_alsa_read.o alsa_pcm_read_simple.o \
+	   fort_test.o hdf_io.o compat_fft.o spec_module.o \
+           ini_file_module.o
 
 all: alsa_pcm_read fort_test
 
@@ -21,8 +23,9 @@ fort_test: $(OBJECTS)
 test_ini_file: ini_file_module.f90
 	$(FC) -o $@ $^ $(FCFLAGS) $(FLFLAGS)
 
-fort_test.o: fort_alsa_read.o hdf_io.o compat_fft.o	\
-             spec_module.o
+fort_test.o: $(OBJECTS)
+#fort_test.o: fort_alsa_read.o hdf_io.o compat_fft.o	\
+#             spec_module.o ini_file_module.o
 spec_module.mod: hdf_io.o compat_fft.o
 
 %.o: %.f90

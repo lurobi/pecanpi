@@ -1,12 +1,17 @@
+module fftw_namespace
+  use :: iso_c_binding
+  include 'fftw3.f03'
+end module
+
 module compat_fft
 
-use :: iso_c_binding
-include 'fftw3.f03'
+use iso_c_binding
+use fftw_namespace
 
 type FFT_HANDLE
    type(C_PTR) :: plan ! for fftw
-   real(C_FLOAT),allocatable :: in(:)
-   complex(C_FLOAT_COMPLEX),allocatable :: out(:)
+   real(C_FLOAT),pointer :: in(:)
+   complex(C_FLOAT_COMPLEX),pointer :: out(:)
    integer :: nfft
    logical :: ii_forward
 end type FFT_HANDLE
@@ -20,7 +25,10 @@ subroutine fft_plan(handle,nfft,direction)
   integer :: nfft
 
   handle%nfft = nfft
-  allocate(handle%in(nfft),handle%out(nfft))
+  allocate(handle%in(nfft))
+  allocate(handle%out(nfft))
+  !call fftwf_malloc_real(handle%in(nfft))
+  !call fftwf_malloc_complex(handle%out(nfft))
   
 
   if(direction .eq. 'forward') then
