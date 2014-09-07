@@ -7,11 +7,13 @@ FLFLAGS := -L/usr/lib
 
 OBJECTS := fort_alsa_read.o alsa_pcm_read_simple.o fort_test.o hdf_io.o compat_fft.o spec_module.o
 
-all: alsa_pcm_read fort_test
+all: alsastream
+#all: alsa_pcm_read fort_test alsastream
 
 clean:
 	rm -f *.o *.mod *~
 	rm -f alsa_pcm_read fort_test
+	rm -f alsastream
 
 alsa_pcm_read: alsa_pcm_read.o
 	$(CC) -o $@ $^ $(CFLAGS) -lasound
