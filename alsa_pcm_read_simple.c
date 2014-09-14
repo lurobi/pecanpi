@@ -2,20 +2,23 @@
 #include <stdlib.h>
 #include <alsa/asoundlib.h>
 
+#include "alsa_pcm_simple.h"
 
-void create_recorder(int samp_rate,char* dev_name,snd_pcm_t **capture_handle_f)
+
+void create_recorder(int samp_rate,char* dev_name,void **capture_handle_f)
 {
   int err;
   snd_pcm_t *capture_handle;
   snd_pcm_hw_params_t *hw_params;
   printf("From C: *capture_handle_f=%p\n",*capture_handle_f);
-  if ((err = snd_pcm_open (capture_handle_f, dev_name, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
+  if ((err = snd_pcm_open ((snd_pcm_t**)capture_handle_f, dev_name, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
     fprintf (stderr, "cannot open audio device %s (%s)\n", 
 	     dev_name,
 	     snd_strerror (err));
+    fprintf(stderr, "Hint: Use \"arecord -l\" to list recording devices.\n");
     exit (1);
   }
-  capture_handle = *capture_handle_f;
+  capture_handle = (snd_pcm_t*)(*capture_handle_f);
   printf("made handle %p (&=%p) to %s at %d\n",capture_handle,&capture_handle,dev_name,samp_rate);
      
   if ((err = snd_pcm_hw_params_malloc (&hw_params)) < 0) {
@@ -98,12 +101,12 @@ void create_recorder(int samp_rate,char* dev_name,snd_pcm_t **capture_handle_f)
 
 }
 
-void get_sample_buffer(snd_pcm_t **capture_handle_f, short *buf,int nbuf)
+void get_sample_buffer(void **capture_handle_f, short *buf,int nbuf)
 {
   int err;
-  snd_pcm_t *capture_handle = *capture_handle_f;
-  printf("get_sample_buffer: buf at %p, nbuf=%d\n",buf,nbuf);
-  printf("reading from handle %p\n",capture_handle);
+  snd_pcm_t *capture_handle = (snd_pcm_t*)(*capture_handle_f);
+  //  printf("get_sample_buffer: buf at %p, nbuf=%d\n",buf,nbuf);
+  //  printf("reading from handle %p\n",capture_handle);
   if ((err = snd_pcm_readi (capture_handle, buf, nbuf)) != nbuf) {
     fprintf (stderr, "read from audio interface failed (%s)\n",
 	     snd_strerror (err));
@@ -111,8 +114,8 @@ void get_sample_buffer(snd_pcm_t **capture_handle_f, short *buf,int nbuf)
   }
 }
 
-void close_device(snd_pcm_t **capture_handle)
-{  
-  snd_pcm_close(*capture_handle);
+void close_device(void **capture_handle)
+{
+  snd_pcm_close((snd_pcm_t*)(*capture_handle));
   capture_handle = NULL;
 }

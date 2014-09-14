@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <alsa/asoundlib.h>
       
-main (int argc, char *argv[])
+int main (int argc, char *argv[])
 {
   int i;
   int err;
@@ -14,6 +14,7 @@ main (int argc, char *argv[])
     fprintf (stderr, "cannot open audio device %s (%s)\n", 
 	     argv[1],
 	     snd_strerror (err));
+    fprintf (stderr, "Use 'arecord -l' to list valid recording devices.\n");
     exit (1);
   }
      
@@ -91,4 +92,6 @@ main (int argc, char *argv[])
   
   snd_pcm_close (capture_handle);
   exit (0);
+
+  return 0;
 }
