@@ -1,8 +1,10 @@
 
+ZMQ_ROOT := /opt/depot
+
 FC  := gfortran
 CC  := gcc
-CFLAGS := --std=gnu99
-FCFLAGS := -g -fcheck=all -I/usr/include
+CFLAGS := --std=gnu99 -I$(ZMQ_ROOT)/include -g -I/usr/include 
+FCFLAGS := -I$(ZMQ_ROOT)/include -g -fcheck=all -I/usr/include 
 FLFLAGS := -L/usr/lib
 
 OBJECTS := fort_alsa_read.o alsa_pcm_read_simple.o fort_test.o hdf_io.o compat_fft.o spec_module.o
