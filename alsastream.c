@@ -5,7 +5,7 @@
  *  
  *  Vers 1.0.2 - rwr - 3 Oct 2014
  *      Added more cmdline args, restructure a bit
- *  Vers  1.0.1 - lar - 
+ *  Vers  1.0.1 - lar - 15 Sep 2014
  *      Added basic cmdline args
  *  Vers  1.0.0 - lar - 7 Sep 2014
  ******************************************************************************/
@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include <zmq.h>
+// Check for zmq > 3.2 because.... ?
 #if ZMQ_VERSION_MAJOR < 3
 #error "zmq version 3.2 required"
 #else
