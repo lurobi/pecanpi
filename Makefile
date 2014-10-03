@@ -21,7 +21,7 @@ alsa_pcm_read: alsa_pcm_read.o
 	$(CC) -o $@ $^ $(CFLAGS) -lasound
 
 alsastream: alsastream.o alsa_pcm_read_simple.o
-	$(CC) -o $@ $^ $(CFLAGS) -lasound -lzmq -lm
+	$(CC) -o $@ $^ $(CFLAGS) -lasound -lzmq
 
 fort_test: $(OBJECTS)
 	$(FC) -o $@ $^ $(FCFLAGS) $(FLFLAGS) -lasound -lhdf5hl_fortran -lhdf5_fortran -lhdf5 -lfftw3f -lm
