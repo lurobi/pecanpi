@@ -41,7 +41,7 @@ typedef struct {
     short *buf;
     int nbuf;
     int ipport;
-    char ipaddr[24];
+    char ipaddr[25];
     char alsadev[MAX_ALSA_NAME+1];
 } sysStruct;
 
@@ -68,7 +68,9 @@ int usage()
 {
     printf("alsastream v%s - built %s\n",PROG_VERSION,__DATE__);
     printf("Usage: alsastream <options>\n");
-    printf("    Options can specify one of the following modes:\n");
+    printf("    Options:\n");
+    printf("       -serv <ipaddr:port> ...... specify server ip/port, can leave off either one\n");
+    printf("    Options can also specify one of the following modes:\n");
     printf("       -dev <hwX:X> ......specify \"default\" or  alsa device <hwX:X> (see \"arecord -l\" for a list)\n");
     printf("       -freq <freqHz> ....Generate sinusoid at this freq\n");
     printf("       -rand  ............Generate random numbers\n");
@@ -96,6 +98,8 @@ int main(int argc, char *argv[])
   sys->freq=347.1;
   sys->nbuf=sys->fs/4;
   sys->buf = (short *)getmem(sizeof(short)*sys->nbuf,"No memory for buffer\n");
+  sys->ipport=5563;
+  strncpy(sys->ipaddr,"127.0.0.1",24);
 
   // Parse args
   while(a<argc) {   /* Process command line arguments */
@@ -108,12 +112,35 @@ int main(int argc, char *argv[])
               case 'd':
                   if(strncmp(argv[a-1],"-dev",4)==0) {
                       if(argc>a) strncpy(sys->alsadev,argv[a++],MAX_ALSA_NAME);
+                      else usage();
                       sys->mode=eAlsa;
                   }
                   break;
               case 'r':
                   if(strncmp(argv[a-1],"-rand",5)==0) {
                       sys->mode=eRandom;
+                  }
+                  break;
+              case 's':
+                  if(strncmp(argv[a-1],"-serv",5)==0) {
+                      if (argc > a) {
+                          char *thearg=(char *) argv[a++];
+                          char *colptr=strchr(thearg,':');
+                          if (colptr == NULL ) // IP Addr only
+                          {
+                              strncpy(sys->ipaddr,thearg,24);
+                          }
+                          else if (thearg[0]==':') 
+                          {
+                              sys->ipport = atoi(thearg+1);
+                          }
+                          else
+                          {
+                              strncpy(sys->ipaddr,thearg,(int)(colptr - thearg));
+                              sys->ipport=atoi(colptr+1);
+                          }
+                      }
+                      else usage();
                   }
                   break;
               case 'f':
