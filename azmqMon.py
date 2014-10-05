@@ -14,6 +14,7 @@ import re, sys, os,time,commands, string
 from PyCmdApp import *
 import zmq,array,struct,threading,math
 import numpy.fft as npfft
+import numpy
 import curses
 
 VERSION = '1.0.0'
@@ -21,6 +22,10 @@ VERSDATE = '30 Sep 2014'
 ############################################################################
 ## ZMQAudioRead
 ############################################################################
+def dB20(lin_val):
+  if lin_val==0: return -numpy.inf
+  else: return 20*math.log10(abs(lin_val))
+
 class ZMQAudioRead:
     def __init__(self,address="tcp://192.168.0.10:5563",parent=None):
         self.parent=parent
@@ -184,7 +189,7 @@ class App(PyCmdApp):
   def analyze(self):
     if len(self.audio)>0:
       obuf=npfft.fft(self.audio,2048)
-      mag=map(lambda x:20*math.log10(abs(x)) - 147,obuf)
+      mag=map(lambda x: dB20(x) - 147,obuf)
       maxmag=max(mag[1:])
       maxidx=mag.index(maxmag)
       fs=8000
