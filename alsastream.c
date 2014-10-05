@@ -10,7 +10,7 @@
  *  Vers  1.0.0 - lar - 7 Sep 2014
  ******************************************************************************/
 #include <math.h>
-#include <unistd.h>
+#include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -61,6 +61,18 @@ void *getmem(int size,char *errmsg)
     return(m);
 }
 
+void wait4(float tsecs)
+{
+    struct timespec slptime,remtime;
+    int stat=0;
+    
+    slptime.tv_sec=0;
+    slptime.tv_nsec=(long)(250e6);     // 0.25 sec
+    while (nanosleep(&slptime,&remtime) == EINTR )  // If interrupted continue
+    {
+        slptime=remtime;
+    }
+}
 /******************************************************************************
  *  Function:    usage
  ******************************************************************************/
@@ -164,7 +176,9 @@ int main(int argc, char *argv[])
   }
   void *context = zmq_ctx_new ();
   void *publisher = zmq_socket (context, ZMQ_PUB);
-  zmq_bind (publisher, "tcp://0.0.0.0:5563");
+  char tcpspec[128];
+  snprintf(tcpspec,127,"tcp://%s:%d",sys->ipaddr,sys->ipport);
+  zmq_bind (publisher, tcpspec);
 
   printf("Sending data... Ctrl-C to quit\n");
   for (unsigned int nloop=0; 1 ;nloop++)
@@ -179,13 +193,14 @@ int main(int argc, char *argv[])
                   for (int j=0;j<sys->nbuf;j++) {
                       sys->buf[j] = rand()%1000;
                   }
-                  sleep(1);
+                  wait4(0.25);
                   break;
               case eSinusoid:
                   for (int j=0;j<sys->nbuf;j++) {
                       sys->buf[j]=16384*cos(2*pi*sys->freq*ix/sys->fs);
                       ix+=1;
                   }
+                  wait4(0.25);
                   break;
           }
       //printf("[%d] Buf: %d %d %d %d\n",nloop,buf[0],buf[1],buf[2],buf[3]);
