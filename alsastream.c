@@ -16,22 +16,12 @@
 #include <string.h>
 
 #include <zmq.h>
-// Check for zmq > 3.2 because.... ?
+// Check for zmq >= 3.2 because of API change.
 #if ZMQ_VERSION_MAJOR < 3
-#error "zmq version 3.2 required"
-#else
-#if ZMQ_VERSION_MAJOR==3
-#if ZMQ_VERSION_MINOR<2
-#error "zmq version 3.2 required"
-#endif
-#endif
-#endif
-
-#if ZMQ_VERSION_MAJOR < 3
-#error "zmq version 3.2 required"
+#error "zmq version 3.2+ required"
 #else
 #if ZMQ_VERSION_MINOR<2
-#error "zmq version 3.2 required"
+#error "zmq version 3.2+ required"
 #endif
 #endif
 
@@ -119,7 +109,7 @@ int main(int argc, char *argv[])
   sys->nbuf=sys->fs/4;
   sys->buf = (short *)getmem(sizeof(short)*sys->nbuf,"No memory for buffer\n");
   sys->ipport=5563;
-  strncpy(sys->ipaddr,"127.0.0.1",24);
+  strncpy(sys->ipaddr,"0.0.0.0",24);
 
   // Parse args
   while(a<argc) {   /* Process command line arguments */
