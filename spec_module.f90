@@ -32,13 +32,13 @@ module SPEC_module
 
       print *,'Begining SPEC_init'
       ! these should be read from config file
-      SPEC%f0 = 8000
-      SPEC%fft_sec = 0.120
+      !SPEC%f0 = 8000
+      !SPEC%fft_sec = 0.120
       SPEC%nsamp_fft = nint(SPEC%fft_sec*SPEC%f0)
-      SPEC%overlap_pct = 0.0
+      !SPEC%overlap_pct = 0.0
       SPEC%keep_sec = 2*60
-      SPEC%f_low = 0.0
-      SPEC%f_high = SPEC%f0/2
+      !SPEC%f_low = 0.0
+      !SPEC%f_high = SPEC%f0/2
 
 
       ! adjust fft size to be power of two

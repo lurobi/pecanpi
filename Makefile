@@ -7,7 +7,9 @@ CFLAGS := --std=gnu99 -I$(ZMQ_ROOT)/include -g -I/usr/include
 FCFLAGS := -I$(ZMQ_ROOT)/include -g -fcheck=all -I/usr/include 
 FLFLAGS := -L/usr/lib
 
-OBJECTS := fort_alsa_read.o alsa_pcm_read_simple.o fort_test.o hdf_io.o compat_fft.o spec_module.o
+OBJECTS := fort_alsa_read.o alsa_pcm_read_simple.o \
+	   fort_test.o hdf_io.o compat_fft.o spec_module.o \
+           ini_file_module.o
 
 all: alsastream
 #all: alsa_pcm_read fort_test alsastream
@@ -21,7 +23,7 @@ alsa_pcm_read: alsa_pcm_read.o
 	$(CC) -o $@ $^ $(CFLAGS) -lasound
 
 alsastream: alsastream.o alsa_pcm_read_simple.o
-	$(CC) -o $@ $^ $(CFLAGS) -lasound -lzmq
+	$(CC) -o $@ $^ $(CFLAGS) -lasound -lzmq -lm
 
 fort_test: $(OBJECTS)
 	$(FC) -o $@ $^ $(FCFLAGS) $(FLFLAGS) -lasound -lhdf5hl_fortran -lhdf5_fortran -lhdf5 -lfftw3f -lm
@@ -29,8 +31,9 @@ fort_test: $(OBJECTS)
 test_ini_file: ini_file_module.f90
 	$(FC) -o $@ $^ $(FCFLAGS) $(FLFLAGS)
 
-fort_test.o: fort_alsa_read.o hdf_io.o compat_fft.o	\
-             spec_module.o
+fort_test.o: $(OBJECTS)
+#fort_test.o: fort_alsa_read.o hdf_io.o compat_fft.o	\
+#             spec_module.o ini_file_module.o
 spec_module.mod: hdf_io.o compat_fft.o
 
 %.o: %.f90

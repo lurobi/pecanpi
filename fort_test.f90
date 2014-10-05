@@ -1,3 +1,31 @@
+module pecanpi_input_module
+
+  contains
+
+    subroutine pecanpi_read_input(SPEC,configfile)
+      use ini_file_module
+      use spec_module
+      type(SPEC_struct) :: SPEC
+      character(len=128) :: configfile
+
+      type(ini_file_struct) :: INI
+
+      call ini_file_open(INI,configfile)
+      SPEC%f0 = ini_read_int(INI,'f0',default=8000)
+      SPEC%fft_sec = ini_read_real(INI,'fft_sec',default=0.12)
+      print *,'Read fft_sec:',fft_sec
+      SPEC%overlap_pct = ini_read_real(INI,'overlap_pct',default=0.0)
+      ! handle either [.00 - 1.00] or [01 - 100]
+      if(SPEC%overlap_pct .gt. 1.0) SPEC%overlap_pct = SPEC%overlap_pct / 100.0
+      SPEC%f_low = ini_read_real(INI,'f_low',default=0.0)
+      SPEC%f_high = ini_read_real(INI,'f_high',default=(SPEC%f0/2))
+      SPEC%ii_pow_2 = 0 .ne. ini_read_int(INI,'ii_pow_2',default=1)
+      call ini_file_close(INI)
+
+    end subroutine pecanpi_read_input
+
+end module pecanpi_input_module
+
 program fort_test
 
   use fort_alsa_read
@@ -6,6 +34,7 @@ program fort_test
   use hdf_io
   use compat_fft
   use spec_module
+  use pecanpi_input_module
 
   implicit none
 
@@ -17,15 +46,22 @@ program fort_test
   integer(kind=c_int16_t),allocatable :: buf(:)
   integer,allocatable :: hdf5_buf(:)
 
-  character(len=*), parameter :: filename = "dsetf.h5"
-  character(len=*), parameter :: dsetname = "audio"
   integer(HID_T) :: file_id,audio_dset_id,hdferr,crp_list
   integer(HID_T) :: audio_filespace_id,audio_memspace_id
   integer :: rank
   integer(HSIZE_T) :: audio_dims(1),max_dims(1),file_dims(1)
 
+  character(len=128) :: configfile,hdffile  
+
+  if( command_argument_count() .ne. 1 ) then
+     print *,'Usage: pecanpi config.ini'
+     stop
+  end if
+  call get_command_argument(1,configfile)
+  call pecanpi_read_input(SPEC,configfile)
+
   call h5open_f(hdferr)
-  f0 = 8000  
+  f0 = SPEC%f0
   nbuf = f0/4
   nchunk=nint(10.0/(real(nbuf)/f0))
   print *,'nchunk',nchunk
