@@ -3,7 +3,7 @@ ZMQ_ROOT := /opt/depot
 
 FC  := gfortran
 CC  := gcc
-CFLAGS := --std=gnu99 -I$(ZMQ_ROOT)/include -g -I/usr/include 
+CFLAGS := --std=gnu99 -I$(ZMQ_ROOT)/include -L$(ZMQ_ROOT)/lib -g -I/usr/include 
 FCFLAGS := -I$(ZMQ_ROOT)/include -g -fcheck=all -I/usr/include 
 FLFLAGS := -L/usr/lib
 
