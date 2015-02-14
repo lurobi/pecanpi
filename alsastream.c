@@ -1,8 +1,10 @@
 /******************************************************************************
  *  @file:       alsastream.c
  *  @brief:      Provide a zmq source for audio data
- *  @author:     Luke Robison
+ *  @author:     Luke Robison, Bob Robison
  *  
+ *  Vers 1.0.3 - lar - 14 Feb, 2015
+ *      Added channels and fixed sample-rate support for ALSA
  *  Vers 1.0.2 - rwr - 3 Oct 2014
  *      Added more cmdline args, restructure a bit
  *  Vers  1.0.1 - lar - 15 Sep 2014
@@ -18,10 +20,10 @@
 #include <zmq.h>
 // Check for zmq >= 3.2 because of API change.
 #if ZMQ_VERSION_MAJOR < 3
-#error "zmq version 3.2+ required"
-#else
+#error "zmq version 3.2+ required (a)"
+#elseif ZMQ_VERSION_MAJOR == 3
 #if ZMQ_VERSION_MINOR<2
-#error "zmq version 3.2+ required"
+#error "zmq version 3.2+ required (b)"
 #endif
 #endif
 
@@ -37,10 +39,13 @@ typedef struct {
     float fs;
     float freq;
     short *buf;
-    int nbuf;
+    int nchan;
+    int nbuf; // number of values in the buffer
+    int nframes; // number of frames, each with nchan many values (interleaved)
     int ipport;
     char ipaddr[25];
     char alsadev[MAX_ALSA_NAME+1];
+  
 } sysStruct;
 
 /******************************************************************************
@@ -81,7 +86,9 @@ int usage()
     printf("    Options:\n");
     printf("       -serv <ipaddr:port> ...... specify server ip/port, can leave off either one\n");
     printf("    Options can also specify one of the following modes:\n");
-    printf("       -dev <hw:X,X> ......specify \"default\" or  alsa device <hwX:X> (see \"arecord -l\" for a list)\n");
+    printf("       -dev <hw:X,X> .....specify \"default\" or  alsa device <hwX:X> (see \"arecord -l\" for a list)\n");
+    printf("       -c <nchans> .......number of channels to record (1 or 2)\n");
+    printf("       -r <fs> ...........rate at which to sample (try 8000, 44100, 48000)\n");
     printf("       -freq <freqHz> ....Generate sinusoid at this freq\n");
     printf("       -rand  ............Generate random numbers\n");
     exit(0);
@@ -104,11 +111,12 @@ int main(int argc, char *argv[])
   // Defaults
   strncpy(sys->alsadev,"default",MAX_ALSA_NAME);
   sys->mode=eRandom;
-  sys->fs=8000;
+  sys->fs=48000;
   sys->freq=347.1;
-  sys->nbuf=sys->fs/4;
-  sys->buf = (short *)getmem(sizeof(short)*sys->nbuf,"No memory for buffer\n");
-  sys->ipport=5563;
+  // each frame has nchan number of interleaved samples
+  sys->nframes = 256;
+  sys->ipport = 5563;
+  sys->nchan = 1;
   strncpy(sys->ipaddr,"0.0.0.0",24);
 
   // Parse args
@@ -119,6 +127,12 @@ int main(int argc, char *argv[])
       else 
       {
           switch(argv[a++][1]) {   /* Auto increment to parameters if any */
+              case 'c':
+                  if(strcmp(argv[a-1],"-c")==0) {
+		    if(argc>a) sys->nchan = atoi(argv[a++]);
+		    else usage();
+                  }
+                  break;
               case 'd':
                   if(strncmp(argv[a-1],"-dev",4)==0) {
                       if(argc>a) strncpy(sys->alsadev,argv[a++],MAX_ALSA_NAME);
@@ -127,8 +141,12 @@ int main(int argc, char *argv[])
                   }
                   break;
               case 'r':
-                  if(strncmp(argv[a-1],"-rand",5)==0) {
+                  if(strcmp(argv[a-1],"-rand")==0) {
                       sys->mode=eRandom;
+                  }
+                  if(strcmp(argv[a-1],"-r")==0) {
+		    if(argc>a) sys->fs = atoi(argv[a++]);
+		    else usage();
                   }
                   break;
               case 's':
@@ -164,13 +182,17 @@ int main(int argc, char *argv[])
           }
       }
   }
+  // make sure nbuf is an integer multiple of nchan
+  sys->nbuf = sys->nframes*sys->nchan;
+  sys->buf = (short *)getmem(sizeof(short)*sys->nbuf,"No memory for buffer\n");
+  sys->nframes = sys->nbuf/sys->nchan;
 
   if (sys->mode == eSinusoid)
       printf("Setting freq to %.1f Hz\n",sys->freq);
   else if (sys->mode == eAlsa) 
   {
       //create_recorder(fs,"hw:2,0",&hpcm);
-      create_recorder(sys->fs,sys->alsadev,&hpcm);
+      create_recorder(sys->fs,sys->alsadev,sys->nchan,&hpcm);
   }
   void *context = zmq_ctx_new ();
   void *publisher = zmq_socket (context, ZMQ_PUB);
@@ -185,7 +207,7 @@ int main(int argc, char *argv[])
       if(nloop % 40 == 0) printf("\n");
       switch (sys->mode) {
               case eAlsa:
-                  get_sample_buffer(&hpcm,sys->buf,sys->nbuf);
+                  get_sample_buffer(&hpcm,sys->buf,sys->nframes);
                   break;
               case eRandom:
                   for (int j=0;j<sys->nbuf;j++) {

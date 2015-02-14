@@ -5,7 +5,7 @@
 #include "alsa_pcm_simple.h"
 
 
-void create_recorder(int samp_rate,char* dev_name,void **capture_handle_f)
+void create_recorder(int samp_rate,char* dev_name,int nchan,void **capture_handle_f)
 {
   int err;
   snd_pcm_t *capture_handle;
@@ -54,15 +54,15 @@ void create_recorder(int samp_rate,char* dev_name,void **capture_handle_f)
   }
   
   int dir = 0;
-  unsigned int val = 8000;
+  unsigned int val = samp_rate;
   if ((err = snd_pcm_hw_params_set_rate_near (capture_handle,
        hw_params, &val, &dir)) < 0) {
     fprintf (stderr, "cannot set sample rate (%s)\n",
 	     snd_strerror (err));
     exit (1);
   }
-  
-  if ((err = snd_pcm_hw_params_set_channels (capture_handle, hw_params, 1)) < 0) {
+
+  if ((err = snd_pcm_hw_params_set_channels (capture_handle, hw_params, nchan)) < 0) {
     fprintf (stderr, "cannot set channel count (%s)\n",
 	     snd_strerror (err));
     exit (1);
@@ -105,8 +105,8 @@ void get_sample_buffer(void **capture_handle_f, short *buf,int nbuf)
 {
   int err;
   snd_pcm_t *capture_handle = (snd_pcm_t*)(*capture_handle_f);
-  //  printf("get_sample_buffer: buf at %p, nbuf=%d\n",buf,nbuf);
-  //  printf("reading from handle %p\n",capture_handle);
+  //printf("get_sample_buffer: buf at %p, nbuf=%d\n",buf,nbuf);
+  //printf("reading from handle %p\n",capture_handle);
   if ((err = snd_pcm_readi (capture_handle, buf, nbuf)) != nbuf) {
     fprintf (stderr, "read from audio interface failed (%s)\n",
 	     snd_strerror (err));
