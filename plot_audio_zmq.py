@@ -9,7 +9,7 @@ import numpy as np
 
 
 class ZMQAudioRead:
-    def __init__(self,address="tcp://192.168.0.10:5563"):
+    def __init__(self,address="tcp://127.0.0.1:5563"):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.SUB)
         self.socket.connect(address)
@@ -30,8 +30,11 @@ class ZMQAudioRead:
             dat_str = mpart[2]
             audio = np.frombuffer(dat_str,dtype=dtbuf)
             frame = np.frombuffer(dat_framenum,dtype=dtfc)
-            
+#            print "got buffer!"
+#            print "frame %d: (%d)"%(frame[0],len(audio))
+#            print "--min/max: %d/%d"%(min(audio),max(audio))
             yield (audio,frame[0])
+
         print "done reading"
             
 
@@ -40,15 +43,17 @@ class AudioPlotter:
         self.datsrc = ZMQAudioRead()
         self.fig,self.ax = pylab.subplots()
         self.line, = self.ax.plot([],[],lw=2)
-        self.datgen = self.datsrc.read_more()
-        self.audio = np.zeros(8000,dtype=np.dtype('h'))
+        self.audio = np.zeros(5*8000,dtype=np.dtype('h'))
         self.frame_counter = 0
+        print "done init"
 
         self.thread = threading.Thread(target=self.update_data)
 
     def update_data(self):
-        while True:
-            (new_audio,self.frame_counter) = self.datgen.next()
+        print "update_data: started"
+        for (new_audio,self.frame_counter) in self.datsrc.read_more():
+#            (new_audio,self.frame_counter) = self.datgen
+#            print "update_data: new frame"
             self.audio = np.roll(self.audio, -len(new_audio))
             start = len(self.audio) - len(new_audio)
             stop = len(self.audio)
@@ -64,20 +69,22 @@ class AudioPlotter:
         #if self.frame_counter%100 == 1:
         self.ax.set_xlim(0,len(self.audio))
         self.ax.set_ylim(-new_lim,new_lim)
-            #print "min/max: %d/%d"%(min(self.audio),max(self.audio))
+        print "min/max: %d/%d"%(min(self.audio),max(self.audio))
         return self.line
 
     def main(self):
         # start getting data
+#        print "main: start"
         self.thread.start()
-
+        
         
         while True:
+#            print "main: draw start"
             self.update_screen()
             pylab.draw()
             pylab.show()
             pylab.pause(0.01)
-            #print "draw loop done!"
+#            print "draw loop done!"
 
     
 #    from multiprocessing import Process
@@ -90,7 +97,19 @@ class AudioPlotter:
 #    exit(0)
 #    get_data()
 
-pylab.ion() # go interactive.
-ap = AudioPlotter()
-ap.main()
 
+if True:
+    pylab.ion() # go interactive.
+    ap = AudioPlotter()
+    ap.main()
+else:
+
+    datsrc = ZMQAudioRead(address="tcp://127.0.0.1:5563")
+    print "Starting!"
+
+    for (new_audio,frame_counter) in datsrc.read_more():
+        #xx = datsrc.read_more
+        #(new_audio,frame_counter) = datsrc.read_more
+        #print len(xx)
+        print "New Frame %d",frame_counter
+    
