@@ -27,7 +27,9 @@
 #endif
 #endif
 
-#include "alsa_pcm_simple.h"
+#include <alsa/asoundlib.h>
+
+//#include "alsa_pcm_simple.h"
 
 /****************************************************************************/
 #define MAX_ALSA_NAME 32
@@ -99,11 +101,14 @@ int usage()
  ******************************************************************************/
 int main(int argc, char *argv[])
 {
-  void *hpcm;
+    //  void *hpcm;
+  snd_pcm_t *pcm;
+  snd_pcm_sframes_t frames;
   sysStruct *sys=NULL;
   int dorandom=0;
   int ix=0;
   int a=1;
+  int err;
   float pi=3.141592653589793;
 
   sys=(sysStruct *)getmem(sizeof(sysStruct),"No memory for sysStruct\n");
@@ -191,8 +196,27 @@ int main(int argc, char *argv[])
       printf("Setting freq to %.1f Hz\n",sys->freq);
   else if (sys->mode == eAlsa) 
   {
+
+      //      create_recorder(sys->fs,sys->alsadev,sys->nchan,&hpcm);
+
+      if ((err = snd_pcm_open(&pcm, sys->alsadev, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
+	  printf("Error opening device for capture: %s\n", snd_strerror(err));
+	  exit(EXIT_FAILURE);
+      }
+      if ((err = snd_pcm_set_params(pcm,
+				    SND_PCM_FORMAT_S16_LE,
+				    SND_PCM_ACCESS_RW_INTERLEAVED,
+				    sys->nchan,
+				    sys->fs,
+				    0, /* soft resample */
+				    500000)) < 0) {   /* 0.5sec latency*/
+	  printf("Playback open error: %s\n", snd_strerror(err));
+	  exit(EXIT_FAILURE);
+      }
+
+      
       //create_recorder(fs,"hw:2,0",&hpcm);
-      create_recorder(sys->fs,sys->alsadev,sys->nchan,&hpcm);
+      //      create_recorder(sys->fs,sys->alsadev,sys->nchan,&hpcm);
   }
   void *context = zmq_ctx_new ();
   void *publisher = zmq_socket (context, ZMQ_PUB);
@@ -207,7 +231,14 @@ int main(int argc, char *argv[])
       if(nloop % 40 == 0) printf("\n");
       switch (sys->mode) {
               case eAlsa:
-                  get_sample_buffer(&hpcm,sys->buf,sys->nframes);
+		  frames = snd_pcm_readi(pcm, sys->buf, sys->nframes);
+		  if (frames < 0)
+		      frames = snd_pcm_recover(pcm, frames, 0);
+		  if (frames < 0) {
+		      printf("snd_pcm_readi failed: %s\n", snd_strerror(err));
+		      break;
+		  }
+                  //get_sample_buffer(&hpcm,sys->buf,sys->nframes);
                   break;
               case eRandom:
                   for (int j=0;j<sys->nbuf;j++) {
@@ -229,6 +260,7 @@ int main(int argc, char *argv[])
       zmq_send(publisher,sys->buf,sys->nbuf*sizeof(short),0);
     }  // End forever loop
   if (sys->mode == eAlsa)
-      close_device(&hpcm);
+      //close_device(&hpcm);
+      snd_pcm_close(pcm);
   printf("Finished\n");
 }  // End main

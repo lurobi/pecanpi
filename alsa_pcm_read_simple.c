@@ -11,7 +11,8 @@ void create_recorder(int samp_rate,char* dev_name,int nchan,void **capture_handl
   snd_pcm_t *capture_handle;
   snd_pcm_hw_params_t *hw_params;
   printf("From C: *capture_handle_f=%p\n",*capture_handle_f);
-  if ((err = snd_pcm_open ((snd_pcm_t**)capture_handle_f, dev_name, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
+  if ((err = snd_pcm_open ((snd_pcm_t**)capture_handle_f, dev_name,
+			   SND_PCM_STREAM_CAPTURE, 0)) < 0) {
     fprintf (stderr, "cannot open audio device %s (%s)\n", 
 	     dev_name,
 	     snd_strerror (err));

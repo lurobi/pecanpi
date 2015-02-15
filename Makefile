@@ -7,7 +7,7 @@ CFLAGS := --std=gnu99 -I$(ZMQ_ROOT)/include -L$(ZMQ_ROOT)/lib -g -I/usr/include
 FCFLAGS := -I$(ZMQ_ROOT)/include -g -fcheck=all -I/usr/include 
 FLFLAGS := -L/usr/lib
 
-OBJECTS := fort_alsa_read.o alsa_pcm_read_simple.o \
+OBJECTS := fort_alsa_read.o \
 	   fort_test.o hdf_io.o compat_fft.o spec_module.o \
            ini_file_module.o
 
@@ -22,7 +22,7 @@ clean:
 alsa_pcm_read: alsa_pcm_read.o
 	$(CC) -o $@ $^ $(CFLAGS) -lasound
 
-alsastream: alsastream.o alsa_pcm_read_simple.o
+alsastream: alsastream.o
 	$(CC) -o $@ $^ $(CFLAGS) -lasound -lzmq -lm
 
 fort_test: $(OBJECTS)
