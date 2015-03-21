@@ -12,6 +12,7 @@
 ###############################################################################
 import re, sys, os,time,commands, string
 from PyCmdApp import *
+import pecanpi_common as ppi
 import zmq,array,struct,threading,math
 import numpy.fft as npfft
 import numpy
@@ -25,31 +26,6 @@ VERSDATE = '30 Sep 2014'
 def dB20(lin_val):
   if lin_val==0: return -numpy.inf
   else: return 20*math.log10(abs(lin_val))
-
-class ZMQAudioRead:
-    def __init__(self,address="tcp://192.168.0.10:5563",parent=None):
-        self.parent=parent
-        self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.SUB)
-        self.socket.connect(address)
-
-        self.data_filter = "audio".decode('ascii')
-        # Only subscribe to messages starting with self.data_filter
-        self.socket.setsockopt_string(zmq.SUBSCRIBE,self.data_filter)
-
-    def read_more(self):
-        dat_str = True
-        while dat_str and not self.parent.done:
-            #print "reading..."
-            mpart = self.socket.recv_multipart()
-            dat_hdr = mpart[0]
-            count = struct.unpack("I",mpart[1])[0]
-            dat_str = mpart[2]
-            audio = array.array('h',dat_str)
-            #print "Header: %s"%dat_hdr
-            #print "Count: %d"%dat_idx
-            yield (count,audio)
-        #print "done reading"
 
 ############################################################################
 ## App class
@@ -209,7 +185,10 @@ class App(PyCmdApp):
       self.logwin.refresh()
   def update_data(self):
     while not self.done:
-      (self.count,self.audio) = self.datgen.next()
+      frame = self.datsrc.get_frame()
+      self.audio = frame.data
+      self.count = len(self.audio)
+      self.fs = frame.fs
       self.updateStatView()
   ############################################################################
   ## main()
@@ -233,8 +212,8 @@ class App(PyCmdApp):
     self.loXkHz=0
     self.hiXkHz=self.fs/2e3
     self.initCurses()
-    self.datsrc = ZMQAudioRead("tcp://%s:%d"%(self.ipaddr,self.ipport),self)
-    self.datgen = self.datsrc.read_more()
+    self.datsrc = ppi.ZMQAudioRead()
+    self.datsrc.connect("tcp://%s:%d"%(self.ipaddr,self.ipport))
     self.audio = []
     self.logfile="/tmp/azmq.log"
     self.thread = threading.Thread(target=self.update_data)
