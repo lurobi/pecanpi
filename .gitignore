@@ -3,3 +3,4 @@
 *.mod
 alsastream
 *.pyc
+*~

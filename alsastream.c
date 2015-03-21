@@ -29,7 +29,8 @@
 
 #include <alsa/asoundlib.h>
 
-//#include "alsa_pcm_simple.h"
+
+#include "pecanpi.h"
 
 /****************************************************************************/
 #define MAX_ALSA_NAME 32
@@ -110,6 +111,8 @@ int main(int argc, char *argv[])
   int a=1;
   int err;
   float pi=3.141592653589793;
+
+  pecanpi_audio_hdr ppi_audio_hdr;
 
   sys=(sysStruct *)getmem(sizeof(sysStruct),"No memory for sysStruct\n");
 
@@ -198,7 +201,7 @@ int main(int argc, char *argv[])
   {
 
       //      create_recorder(sys->fs,sys->alsadev,sys->nchan,&hpcm);
-
+      printf("Opening ALSA device %s\n",sys->alsadev);
       if ((err = snd_pcm_open(&pcm, sys->alsadev, SND_PCM_STREAM_CAPTURE, 0)) < 0) {
 	  printf("Error opening device for capture: %s\n", snd_strerror(err));
 	  exit(EXIT_FAILURE);
@@ -218,6 +221,10 @@ int main(int argc, char *argv[])
       //create_recorder(fs,"hw:2,0",&hpcm);
       //      create_recorder(sys->fs,sys->alsadev,sys->nchan,&hpcm);
   }
+  else if (sys->mode == eRandom)
+  {
+      printf("Starting Random playback.\n");
+  }
   void *context = zmq_ctx_new ();
   void *publisher = zmq_socket (context, ZMQ_PUB);
   char tcpspec[128];
@@ -225,10 +232,24 @@ int main(int argc, char *argv[])
   zmq_bind (publisher, tcpspec);
 
   printf("Sending data... Ctrl-C to quit\n");
-  for (unsigned int nloop=0; 1 ;nloop++)
-    {
-      printf("."); fflush(stdout);
-      if(nloop % 40 == 0) printf("\n");
+  
+  ppi_audio_hdr.data_packet_bytes= sys->nchan * sys->nframes * 2 * 1;
+  ppi_audio_hdr.num_samples = sys->nframes;
+  ppi_audio_hdr.frame_num = 0;
+  ppi_audio_hdr.fs = sys->fs;
+  ppi_audio_hdr.frame_time = 0.0;
+  ppi_audio_hdr.f_bb = 0.0;
+  ppi_audio_hdr.nchan = sys->nchan;
+  ppi_audio_hdr.sample_type = 3; // int16
+  ppi_audio_hdr.packet_type = 1; // time-series
+
+  
+  for (unsigned int nloop=0; 1 ;nloop++) {
+      if(nloop % 40 == 0) {
+	  printf("."); fflush(stdout);
+	  if (nloop % (40*40) == 0) printf("\n");
+      }
+      ppi_audio_hdr.frame_num = nloop;
       switch (sys->mode) {
               case eAlsa:
 		  frames = snd_pcm_readi(pcm, sys->buf, sys->nframes);
@@ -238,7 +259,6 @@ int main(int argc, char *argv[])
 		      printf("snd_pcm_readi failed: %s\n", snd_strerror(err));
 		      break;
 		  }
-                  //get_sample_buffer(&hpcm,sys->buf,sys->nframes);
                   break;
               case eRandom:
                   for (int j=0;j<sys->nbuf;j++) {
@@ -255,8 +275,11 @@ int main(int argc, char *argv[])
                   break;
           }
       //printf("[%d] Buf: %d %d %d %d\n",nloop,buf[0],buf[1],buf[2],buf[3]);
+
+      ppi_audio_hdr.frame_time += sys->nframes/sys->fs;
+
       zmq_send(publisher,"audio",5,ZMQ_SNDMORE);
-      zmq_send(publisher,&nloop,sizeof(nloop),ZMQ_SNDMORE);
+      zmq_send(publisher,&ppi_audio_hdr,sizeof(ppi_audio_hdr),ZMQ_SNDMORE);
       zmq_send(publisher,sys->buf,sys->nbuf*sizeof(short),0);
     }  // End forever loop
   if (sys->mode == eAlsa)
