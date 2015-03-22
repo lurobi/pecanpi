@@ -42,7 +42,7 @@ class SpecExtents:
     self.magPosdB=(self.hiMag - self.loMag)/2 + self.loMag
     self.loHz=0
     self.hiHz=self.fs/2
-    self.hzPerPixel=(self.fs/2) / double(self.maxx)
+    self.hzPerPixel=(self.fs/2) / float(self.maxx)
     self.curPosHz=self.curPos*self.hzPerPixel + self.loHz
   # adjustExtents units are w/respect to 1.0 = 100%
   #  i.e. panx 1.0 does nothing, panx=1.5 pans by 50% of current x range
@@ -347,7 +347,7 @@ class App(PyCmdApp):
            if self.zoom>50:
              self.zoom=50
          self.curPoskHz= (self.curPos/float(maxx))* (self.hiXkHz - self.loXkHz) + self.loXkHz
-         self.hzperpixel=(self.fs/2)/(double(maxx)*self.zoom)
+         self.hzperpixel=(self.fs/2)/(float(maxx)*self.zoom)
          self.updateCursor()
 	 curses.doupdate()
          # shows over, tear down
