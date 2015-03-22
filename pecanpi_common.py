@@ -1,6 +1,7 @@
 import numpy as np
 import struct
 import zmq
+import time
 
 class ZMQAudioFrame:
     def __init__(self):
@@ -85,3 +86,29 @@ class ZMQAudioRead:
         #print "frame %d: (%d)"%(frame[0],len(audio))
         #print "--min/max: %d/%d"%(min(audio),max(audio))
         return frame
+
+
+class TicToc:
+    def __init__(self):
+        self.timers = dict()
+        self.cumtime = dict()
+        self.ntimes = dict()
+        self.reporttime = 5
+    def tic(self,key):
+        self.timers[key] = time.time()
+    def toc(self,key):
+        t2 = time.time()
+        t1 = self.timers.get(key,None)
+        if t1 == None:
+            raise Exception("No tic for this toc!")
+        self.cumtime[key] = self.cumtime.get(key,0) + (t2-t1)
+        self.ntimes[key] = self.ntimes.get(key,0) + 1
+
+        if self.cumtime[key] > self.reporttime:
+            print "%s: %.2f seconds in %d calls, %.2f per call" % \
+                (key, self.cumtime[key], self.ntimes[key],
+                 float(self.cumtime[key])/float(self.ntimes[key]))
+            self.ntimes[key] = 0
+            self.cumtime[key] = 0
+        self.timers[key] = None
+
